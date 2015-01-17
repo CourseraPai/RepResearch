@@ -43,9 +43,14 @@ withoutNA<-withNA[complete.cases(withNA),]
 ```{r echo=TRUE}
 totalsteps<-aggregate(withoutNA$steps ~ withoutNA$date, data=withoutNA, FUN=sum)
 names(totalsteps)<-c("date","steps")
-attach(totalsteps)
-hist(steps,main="Total Steps per Day",xlab="Total steps",col="lightgreen")
+```
 
+```{r message=FALSE}
+attach(totalsteps)
+```
+
+```{r echo=TRUE}
+hist(steps,main="Total Steps per Day",xlab="Total steps",col="lightgreen")
 ```
     
 ####2.Mean and Median of total steps per day
@@ -86,33 +91,63 @@ nrow(withNA)-nrow(withoutNA)
 ####2.Strategy for filling the missing values
 -Write a function to compute mean  
 -Using plyr package and ddply function replace NA of steps column with the mean steps for that given interval
--Call the transformed dataframe as filledNA
-
+  
 ```{r echo=TRUE}
 library(plyr)
 meanfunc <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+```
+
+####3.Create dataset with missing data filled in
+```{r echo = TRUE}
 filledNA<-(ddply(withNA, ~ interval, transform,  steps= meanfunc(steps)))
 ```
 
-###Activity patterns - weekdays and Weekends
-```{r}
-library(plyr)
-meanfunc <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
-aggavg<-aggregate(df$steps ~ df$interval, data=df, FUN=mean)
-filledNA<-(ddply(df, ~ interval, transform,  steps= meanfunc(steps)))
-aggavg<-aggregate(withoutNA$steps ~ withoutNA$interval, data=df, FUN=mean)
+####4.Histogram, Mean and Median for new data with NA values filled  
+```{r echo=TRUE}
+totalsteps<-aggregate(filledNA$steps ~ filledNA$date, data=filledNA, FUN=sum)
+names(totalsteps)<-c("date","steps")
+```
+
+```{r message=FALSE}
+attach(totalsteps)
+```
+
+```{r echo=TRUE}
+hist(steps,main="Total Steps per Day for data with filled NA values",xlab="Total steps",col="lightblue")
+```
+
+```{r echo=TRUE}
+meansteps<-aggregate(filledNA$steps ~ filledNA$date, data=filledNA, FUN=mean)
+mediansteps<-aggregate(filledNA$steps ~ filledNA$date, data=filledNA, FUN=median)
+```
+
+####5.Impact of imputing missing data
+The following summaries show that imputing missing data has no effect on the actual data
+
+```{r echo=TRUE}
 
 summary(withoutNA)
 summary(filledNA)
-aggavg<-aggregate(filledNA$steps ~ filledNA$interval, data=filledNA, FUN=mean)
-names(aggavg)<-c("interval","steps")
-plot(aggavg$interval, aggavg$steps, type="l", xlab= "interval", ylab= "avgsteps", col="green" , lwd=2)
-summary(aggavg)
-filledNA$Daytype<-ifelse(weekdays(as.Date(filledNA$date)) %in% c('Sunday','Saturday'), 'Weekend', 'Weekday')
-library(lattice)
-aggavg<-aggregate(filledNA$steps ~ filledNA$Daytype+filledNA$interval, data=filledNA, FUN=mean)
-names(aggavg)<-c("Daytype","interval","steps")
-xyplot(steps~interval|Daytype, group=Daytype, data=aggavg, type="l",layout=c(1,2))
 
 ```
+
+###Activity patterns - weekdays and Weekends  
+####1.Creating a factor variable to indicate "Weekday" and "Weekend"
+
+```{r}
+
+filledNA$Daytype<-ifelse(weekdays(as.Date(filledNA$date)) %in% c('Sunday','Saturday'), 'Weekend', 'Weekday')
+```
+     
+####2.Panel plot - time series plot of the 5-minute interval and the average number of steps taken, averaged across all weekday days or weekend days
+
+```{r echo=TRUE}
+
+library(lattice)
+aggavg<-aggregate(filledNA$steps ~ filledNA$Daytype+filledNA$interval, data=filledNA, FUN=mean)
+names(aggavg)<-c("Daytype","Interval","Steps")
+xyplot(Steps~Interval|Daytype, group=Daytype, data=aggavg, type="l",layout=c(1,2))
+
+```
+
 
